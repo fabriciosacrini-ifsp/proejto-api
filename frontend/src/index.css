@@ -1,0 +1,734 @@
+/* =========================================================
+   Estilo 1: "Caderno Moderno / Warm Minimal"
+   Tons quentes de papel no tema claro e grafite macio no escuro,
+   com cor de destaque que acompanha cada criptomoeda.
+   ========================================================= */
+:root {
+  --fundo: #faf7f2;
+  --fundo-secundario: #f2ede4;
+  --card: #ffffff;
+  --borda: #e6dfd3;
+  --texto: #1c1917;
+  --texto-suave: #78716c;
+  --primario: #d97706;
+  --primario-hover: #b45309;
+  --primario-suave: rgba(217, 119, 6, 0.12);
+  --alta: #15803d;
+  --alta-fundo: rgba(22, 163, 74, 0.12);
+  --baixa: #b91c1c;
+  --baixa-fundo: rgba(220, 38, 38, 0.11);
+  --info: #b45309;
+  --info-fundo: rgba(217, 119, 6, 0.12);
+  --neutra: #57534e;
+  --neutra-fundo: rgba(120, 113, 108, 0.12);
+  --sombra: 0 10px 30px -10px rgba(28, 25, 23, 0.07), 0 2px 6px rgba(28, 25, 23, 0.03);
+}
+
+[data-theme='dark'] {
+  --fundo: #131211;
+  --fundo-secundario: #201e1c;
+  --card: #181715;
+  --borda: #2b2825;
+  --texto: #f5f2eb;
+  --texto-suave: #9c958b;
+  --alta: #4ade80;
+  --alta-fundo: rgba(74, 222, 128, 0.13);
+  --baixa: #f87171;
+  --baixa-fundo: rgba(248, 113, 113, 0.13);
+  --neutra: #d6d3cd;
+  --neutra-fundo: rgba(168, 162, 158, 0.14);
+  --sombra: 0 14px 34px -10px rgba(0, 0, 0, 0.45);
+}
+
+/* Cor de destaque dinâmica para cada criptomoeda */
+.pagina[data-moeda='btc'] {
+  --primario: #e07a16;
+  --primario-hover: #c6690c;
+  --primario-suave: rgba(247, 147, 26, 0.14);
+  --info: #e07a16;
+  --info-fundo: rgba(247, 147, 26, 0.14);
+}
+
+.pagina[data-moeda='eth'] {
+  --primario: #5b6ee1;
+  --primario-hover: #4759cb;
+  --primario-suave: rgba(98, 126, 234, 0.15);
+  --info: #6d7fea;
+  --info-fundo: rgba(98, 126, 234, 0.15);
+}
+
+.pagina[data-moeda='link'] {
+  --primario: #3867d6;
+  --primario-hover: #2954bd;
+  --primario-suave: rgba(56, 103, 214, 0.15);
+  --info: #4b7bec;
+  --info-fundo: rgba(56, 103, 214, 0.15);
+}
+
+.pagina[data-moeda='sol'] {
+  --primario: #8854d0;
+  --primario-hover: #733fb8;
+  --primario-suave: rgba(136, 84, 208, 0.16);
+  --info: #a55eea;
+  --info-fundo: rgba(136, 84, 208, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--fundo);
+  color: var(--texto);
+  line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.pagina {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 28px 20px 48px;
+}
+
+/* Cabeçalho */
+.cabecalho {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.cabecalho h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.cabecalho-acoes,
+.acoes-topo,
+.titulo-com-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.icone-destaque {
+  color: var(--primario);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+/* Banners */
+.banner-erro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  margin-bottom: 18px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  background: var(--baixa-fundo);
+  color: var(--baixa);
+}
+
+/* Barra de seleção de moedas (estilo pílulas orgânicas) */
+.barra-filtros {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.grupo-botoes {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  box-shadow: var(--sombra);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--texto);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.pill:hover {
+  background: var(--fundo-secundario);
+}
+
+.pill-nome {
+  font-weight: 500;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+}
+
+.pill.ativo {
+  background: var(--primario-suave);
+  border-color: var(--primario);
+  color: var(--texto);
+}
+
+.pill.ativo .pill-nome {
+  color: var(--texto);
+  opacity: 0.85;
+}
+
+/* Layout principal */
+.conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.grade-superior {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 820px) {
+  .grade-superior {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cards principais (folhas suaves com cantos arredondados) */
+.card {
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 22px;
+  padding: 22px;
+  box-shadow: var(--sombra);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-topo h2 {
+  font-size: 1.08rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Botões e inputs */
+.btn,
+.btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn {
+  padding: 10px 16px;
+  font-size: 0.88rem;
+}
+
+.btn-compacto {
+  padding: 8px 15px;
+  font-size: 0.84rem;
+}
+
+.btn-pequeno {
+  padding: 6px 12px;
+  font-size: 0.79rem;
+}
+
+.btn-icone {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--texto);
+  border: 1px solid var(--borda);
+  box-shadow: var(--sombra);
+}
+
+.btn-icone:hover {
+  background: var(--fundo-secundario);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-primario {
+  background: var(--primario);
+  color: #ffffff;
+}
+
+.btn-primario:hover:not(:disabled) {
+  background: var(--primario-hover);
+}
+
+.btn-secundario {
+  background: var(--fundo-secundario);
+  color: var(--texto);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-sucesso {
+  background: var(--primario);
+  color: #ffffff;
+}
+
+.btn-sucesso:hover:not(:disabled) {
+  background: var(--primario-hover);
+}
+
+.btn-perigo {
+  background: var(--baixa-fundo);
+  color: var(--baixa);
+}
+
+.btn-perigo:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.formulario-linha {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-com-prefixo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  border: 1px solid transparent;
+  background: var(--fundo-secundario);
+  border-radius: 14px;
+  padding-left: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.input-com-prefixo:focus-within {
+  border-color: var(--primario);
+}
+
+.prefixo {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.input-com-prefixo input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 10px 12px;
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.96rem;
+  font-weight: 500;
+  outline: none;
+}
+
+/* Termômetro (superfícies suaves sem linhas duras de grade) */
+.preco-destaque-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--fundo-secundario);
+}
+
+.preco-grande {
+  font-size: 1.72rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.tendencia-coluna {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.diferenca-texto {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.grade-estatisticas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.mini-card {
+  padding: 13px 15px;
+  border-radius: 16px;
+  background: var(--fundo-secundario);
+  border: 1px solid transparent;
+}
+
+.mini-card.destaque-cripto {
+  background: var(--primario-suave);
+}
+
+.label-pequena,
+.label-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+  margin-bottom: 4px;
+}
+
+.label-pequena {
+  display: block;
+}
+
+.mini-card strong {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.96rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.badge-alta {
+  background: var(--alta-fundo);
+  color: var(--alta);
+}
+
+.badge-baixa {
+  background: var(--baixa-fundo);
+  color: var(--baixa);
+}
+
+.badge-info {
+  background: var(--info-fundo);
+  color: var(--info);
+}
+
+.badge-neutra {
+  background: var(--neutra-fundo);
+  color: var(--neutra);
+}
+
+.texto-alta {
+  color: var(--alta);
+  font-weight: 600;
+}
+
+.texto-baixa {
+  color: var(--baixa);
+  font-weight: 600;
+}
+
+.valor-icone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Conversor */
+.resultado-conversao {
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--fundo-secundario);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.valor-cripto-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.valor-cripto-destaque {
+  font-size: 1.52rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.chips-conversao {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  background: var(--card);
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.chip-info {
+  background: var(--info-fundo);
+  color: var(--info);
+  font-weight: 600;
+}
+
+/* Carteira Virtual (4 cards suaves) */
+.resumo-carteira-quatro {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 820px) {
+  .resumo-carteira-quatro {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .resumo-carteira-quatro {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Estados vazios e erro */
+.estado-vazio-minimal {
+  padding: 26px 16px;
+  border-radius: 16px;
+  background: var(--fundo-secundario);
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.mensagem-erro {
+  color: var(--baixa);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* =========================================================
+   Pop-up Modal no Estilo Caderno Moderno
+   ========================================================= */
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  background: rgba(19, 18, 17, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 660px;
+  max-height: 82vh;
+  background: var(--card);
+  border: 1px solid var(--borda);
+  border-radius: 24px;
+  box-shadow: var(--sombra);
+  display: flex;
+  flex-direction: column;
+  animation: modalEntrar 0.18s ease-out;
+}
+
+@keyframes modalEntrar {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-topo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.modal-topo h3 {
+  font-size: 1.05rem;
+}
+
+.modal-subtitulo {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.modal-corpo {
+  padding: 18px 22px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-resumo-topo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.modal-resumo-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--fundo-secundario);
+}
+
+.modal-resumo-item span {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--texto-suave);
+  margin-bottom: 2px;
+}
+
+.modal-resumo-item strong {
+  font-size: 0.95rem;
+}
+
+.modal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-item-linha,
+.modal-compra-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  border-radius: 16px;
+  background: var(--fundo-secundario);
+}
+
+.modal-item-esq {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.indice-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--texto-suave);
+}
+
+.modal-item-titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.modal-item-data {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--texto-suave);
+}
+
+.modal-item-dir,
+.modal-compra-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-preco {
+  font-size: 1rem;
+}
+
+.modal-compra-valores {
+  display: flex;
+  gap: 18px;
+}
+
+/* Animação do ícone de atualizar */
+.girando {
+  animation: girar 0.75s linear infinite;
+}
+
+@keyframes girar {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
