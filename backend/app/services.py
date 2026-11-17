@@ -2,9 +2,9 @@ import math
 import time
 import requests
 from app import db
-from app.models import PrecoCripto, Investimento
+from app.models import Moeda, Carteira, PrecoCripto, Investimento
 
-# Criptomoedas aceitas pela nossa API (chave da URL -> nome completo)
+# Criptomoedas iniciais do sistema (cadastradas automaticamente no SQLite)
 MOEDAS_SUPORTADAS = {
     "btc": "Bitcoin",
     "eth": "Ethereum",
@@ -26,16 +26,49 @@ def arredondar(valor: float, casas: int = 2) -> float:
     return 0.0 if abs(resultado) == 0 else resultado
 
 
-def validar_moeda(moeda_key: str):
-    """Verifica se a criptomoeda enviada existe em MOEDAS_SUPORTADAS."""
+def _validar_valor_positivo(valor: float, mensagem_erro: str) -> str | None:
+    """Garante que o valor numérico é finito e maior que zero."""
+    if not math.isfinite(valor) or valor <= 0:
+        return mensagem_erro
+    return None
+
+
+def inicializar_dados_padrao():
+    """
+    Popula o banco SQLite com as 4 moedas iniciais e a Carteira Principal
+    caso o banco esteja vazio na primeira execução.
+    """
+    for sigla, nome in MOEDAS_SUPORTADAS.items():
+        simbolo_upper = sigla.upper()
+        existe = Moeda.query.filter_by(simbolo=simbolo_upper).first()
+        if not existe:
+            db.session.add(Moeda(simbolo=simbolo_upper, nome=nome))
+
+    carteira_padrao = Carteira.query.first()
+    if not carteira_padrao:
+        db.session.add(
+            Carteira(
+                nome="Carteira Principal",
+                titular="Investidor Padrão",
+                perfil="Moderado",
+            )
+        )
+
+    db.session.commit()
+
+
+def buscar_moeda_db(moeda_key: str) -> tuple[Moeda | None, str | None]:
+    """Busca a criptomoeda na tabela 'moedas' pela sigla (ex: 'btc' ou 'BTC')."""
     if not isinstance(moeda_key, str) or not moeda_key.strip():
         return None, "Informe uma criptomoeda válida"
 
-    moeda_limpa = moeda_key.strip().lower()
-    if moeda_limpa not in MOEDAS_SUPORTADAS:
-        return None, "Moeda não suportada"
+    simbolo = moeda_key.strip().upper()
+    moeda_obj = Moeda.query.filter_by(simbolo=simbolo).first()
 
-    return moeda_limpa, None
+    if not moeda_obj:
+        return None, f"Moeda '{simbolo}' não encontrada no cadastro"
+
+    return moeda_obj, None
 
 
 def consultar_preco_coinbase(simbolo: str, usar_cache: bool = True) -> float | None:
@@ -62,13 +95,135 @@ def consultar_preco_coinbase(simbolo: str, usar_cache: bool = True) -> float | N
     return None
 
 
+# =====================================================================
+# CRUD TABELA 1: MOEDAS (moedas)
+# =====================================================================
+
+def listar_moedas_db() -> list[Moeda]:
+    """[READ] Lista todas as criptomoedas cadastradas na tabela 'moedas'."""
+    return Moeda.query.order_by(Moeda.id.asc()).all()
+
+
+def cadastrar_moeda(simbolo: str, nome: str):
+    """[CREATE] Cadastra uma nova criptomoeda após validar se existe na Coinbase."""
+    if not simbolo or not simbolo.strip() or not nome or not nome.strip():
+        return None, "Informe o símbolo (ex: ADA) e o nome da moeda (ex: Cardano)"
+
+    simbolo_limpo = simbolo.strip().upper()
+    nome_limpo = nome.strip()
+
+    if Moeda.query.filter_by(simbolo=simbolo_limpo).first():
+        return None, f"A moeda '{simbolo_limpo}' já está cadastrada"
+
+    preco_teste = consultar_preco_coinbase(simbolo_limpo, usar_cache=False)
+    if preco_teste is None:
+        return None, f"A Coinbase não possui cotação em BRL para '{simbolo_limpo}'"
+
+    nova_moeda = Moeda(simbolo=simbolo_limpo, nome=nome_limpo)
+    db.session.add(nova_moeda)
+    db.session.commit()
+    return nova_moeda, None
+
+
+def atualizar_moeda(moeda_id: int, novo_nome: str):
+    """[UPDATE] Atualiza o nome de uma criptomoeda cadastrada."""
+    moeda_obj = db.session.get(Moeda, moeda_id)
+    if not moeda_obj:
+        return None, "Moeda não encontrada pelo ID informado"
+
+    if not novo_nome or not novo_nome.strip():
+        return None, "Informe um novo nome válido para a moeda"
+
+    moeda_obj.nome = novo_nome.strip()
+    db.session.commit()
+    return moeda_obj, None
+
+
+def remover_moeda(moeda_id: int):
+    """[DELETE] Remove uma criptomoeda e seus registros vinculados."""
+    moeda_obj = db.session.get(Moeda, moeda_id)
+    if not moeda_obj:
+        return False, "Moeda não encontrada pelo ID informado"
+
+    if Moeda.query.count() <= 1:
+        return False, "Não é permitido excluir a última moeda do sistema"
+
+    db.session.delete(moeda_obj)
+    db.session.commit()
+    return True, None
+
+
+# =====================================================================
+# CRUD TABELA 2: CARTEIRAS (carteiras)
+# =====================================================================
+
+def listar_carteiras() -> list[Carteira]:
+    """[READ] Lista todas as carteiras de investidores cadastradas."""
+    return Carteira.query.order_by(Carteira.id.asc()).all()
+
+
+def criar_carteira(nome: str, titular: str, perfil: str = "Moderado"):
+    """[CREATE] Cria uma nova carteira de investimentos no banco."""
+    if not nome or not nome.strip() or not titular or not titular.strip():
+        return None, "Informe o nome da carteira e o nome do titular"
+
+    perfil_limpo = (perfil or "Moderado").strip().capitalize()
+    nova_carteira = Carteira(
+        nome=nome.strip(),
+        titular=titular.strip(),
+        perfil=perfil_limpo,
+    )
+    db.session.add(nova_carteira)
+    db.session.commit()
+    return nova_carteira, None
+
+
+def atualizar_carteira(
+    carteira_id: int,
+    novo_nome: str | None = None,
+    novo_titular: str | None = None,
+    novo_perfil: str | None = None,
+):
+    """[UPDATE] Atualiza os dados cadastrais (nome, titular ou perfil) de uma carteira."""
+    carteira = db.session.get(Carteira, carteira_id)
+    if not carteira:
+        return None, "Carteira não encontrada pelo ID informado"
+
+    if novo_nome is not None and novo_nome.strip():
+        carteira.nome = novo_nome.strip()
+    if novo_titular is not None and novo_titular.strip():
+        carteira.titular = novo_titular.strip()
+    if novo_perfil is not None and novo_perfil.strip():
+        carteira.perfil = novo_perfil.strip().capitalize()
+
+    db.session.commit()
+    return carteira, None
+
+
+def remover_carteira(carteira_id: int):
+    """[DELETE] Exclui uma carteira e suas compras vinculadas."""
+    carteira = db.session.get(Carteira, carteira_id)
+    if not carteira:
+        return False, "Carteira não encontrada pelo ID informado"
+
+    if Carteira.query.count() <= 1:
+        return False, "Não é permitido excluir a única carteira ativa do sistema"
+
+    db.session.delete(carteira)
+    db.session.commit()
+    return True, None
+
+
+# =====================================================================
+# CRUD TABELA 3: COTAÇÕES / TERMÔMETRO (precos_cripto)
+# =====================================================================
+
 def calcular_termometro(simbolo: str) -> dict | None:
     """
     Lê o histórico salvo no banco para aquela moeda e calcula:
     - se subiu, caiu ou manteve em relação à consulta anterior;
     - maior preço, menor preço e média.
     """
-    # Ordena do mais recente para o mais antigo: [0] é o atual e [1] é o anterior
     registros = (
         PrecoCripto.query
         .filter_by(simbolo=simbolo.upper(), moeda_base=MOEDA_PADRAO)
@@ -118,34 +273,35 @@ def calcular_termometro(simbolo: str) -> dict | None:
 
 
 def registrar_cotacao(moeda_key: str):
-    """Consulta o preço ao vivo na Coinbase, grava no SQLite e devolve o termômetro."""
-    moeda_limpa, erro = validar_moeda(moeda_key)
+    """[CREATE] Consulta o preço ao vivo na Coinbase, grava em 'precos_cripto' e devolve o termômetro."""
+    moeda_obj, erro = buscar_moeda_db(moeda_key)
     if erro:
         return None, None, erro
 
-    preco = consultar_preco_coinbase(moeda_limpa, usar_cache=False)
+    preco = consultar_preco_coinbase(moeda_obj.simbolo, usar_cache=False)
     if preco is None:
         return None, None, "Falha ao obter cotação na Coinbase"
 
     novo_registro = PrecoCripto(
-        simbolo=moeda_limpa.upper(),
+        moeda_id=moeda_obj.id,
+        simbolo=moeda_obj.simbolo,
         moeda_base=MOEDA_PADRAO,
         preco=preco,
     )
     db.session.add(novo_registro)
     db.session.commit()
 
-    termometro = calcular_termometro(moeda_limpa)
+    termometro = calcular_termometro(moeda_obj.simbolo)
     return novo_registro, termometro, None
 
 
 def obter_resumo_moeda(moeda_key: str):
-    """Retorna apenas o termômetro já salvo no banco, sem gravar uma nova consulta."""
-    moeda_limpa, erro = validar_moeda(moeda_key)
+    """[READ] Retorna apenas o termômetro já salvo no banco, sem gravar nova consulta."""
+    moeda_obj, erro = buscar_moeda_db(moeda_key)
     if erro:
         return None, erro
 
-    termometro = calcular_termometro(moeda_limpa)
+    termometro = calcular_termometro(moeda_obj.simbolo)
     if termometro is None:
         return None, "Nenhuma cotação registrada ainda para esta moeda"
 
@@ -153,7 +309,7 @@ def obter_resumo_moeda(moeda_key: str):
 
 
 def listar_historico(moeda_key: str | None = None):
-    """Lista todas as cotações salvas no banco para a moeda informada."""
+    """[READ] Lista todas as cotações salvas no banco (opcionalmente filtrando por moeda)."""
     query = PrecoCripto.query.filter_by(moeda_base=MOEDA_PADRAO)
 
     if moeda_key:
@@ -162,16 +318,39 @@ def listar_historico(moeda_key: str | None = None):
     return query.order_by(PrecoCripto.data_consulta.desc(), PrecoCripto.id.desc()).all()
 
 
-def _validar_valor_positivo(valor: float, mensagem_erro: str) -> str | None:
-    """Garante que o valor numérico é finito e maior que zero."""
-    if not math.isfinite(valor) or valor <= 0:
-        return mensagem_erro
-    return None
+def atualizar_cotacao_historico(cotacao_id: int, novo_preco: float):
+    """[UPDATE] Corrige/atualiza o preço em Reais de uma cotação já salva no histórico."""
+    registro = db.session.get(PrecoCripto, cotacao_id)
+    if not registro:
+        return None, "Registro de cotação não encontrado pelo ID informado"
 
+    erro_valor = _validar_valor_positivo(novo_preco, "O novo preço deve ser maior que zero")
+    if erro_valor:
+        return None, erro_valor
+
+    registro.preco = novo_preco
+    db.session.commit()
+    return registro, None
+
+
+def remover_cotacao_historico(cotacao_id: int):
+    """[DELETE] Remove um registro específico do histórico de cotações pelo ID."""
+    registro = db.session.get(PrecoCripto, cotacao_id)
+    if not registro:
+        return False, "Registro de cotação não encontrado pelo ID informado"
+
+    db.session.delete(registro)
+    db.session.commit()
+    return True, None
+
+
+# =====================================================================
+# CONVERSOR DE MOEDAS (BRL -> CRIPTO / SATOSHIS)
+# =====================================================================
 
 def converter_valor(moeda_key: str, valor: float):
     """Converte um valor em Reais (R$) para a fração correspondente da criptomoeda."""
-    moeda_limpa, erro = validar_moeda(moeda_key)
+    moeda_obj, erro = buscar_moeda_db(moeda_key)
     if erro:
         return None, erro
 
@@ -179,30 +358,34 @@ def converter_valor(moeda_key: str, valor: float):
     if erro_valor:
         return None, erro_valor
 
-    preco_unitario = consultar_preco_coinbase(moeda_limpa)
+    preco_unitario = consultar_preco_coinbase(moeda_obj.simbolo)
     if preco_unitario is None:
         return None, "Falha ao obter cotação na Coinbase"
 
     quantidade_cripto = valor / preco_unitario
 
     resultado = {
-        "moeda": moeda_limpa.upper(),
-        "nome_moeda": MOEDAS_SUPORTADAS[moeda_limpa],
+        "moeda": moeda_obj.simbolo,
+        "nome_moeda": moeda_obj.nome,
         "valor_informado": arredondar(valor, 2),
         "preco_unitario": arredondar(preco_unitario, 2),
         "quantidade_cripto": round(quantidade_cripto, 8),
     }
 
     # 1 Bitcoin equivale a 100 milhões de Satoshis
-    if moeda_limpa == "btc":
+    if moeda_obj.simbolo == "BTC":
         resultado["satoshis"] = round(quantidade_cripto * 100_000_000)
 
     return resultado, None
 
 
-def criar_investimento(moeda_key: str, valor_investido: float):
-    """Simula a compra de uma criptomoeda em Reais e salva na tabela Investimento."""
-    moeda_limpa, erro = validar_moeda(moeda_key)
+# =====================================================================
+# CRUD TABELA 4: INVESTIMENTOS DA CARTEIRA (investimentos)
+# =====================================================================
+
+def criar_investimento(moeda_key: str, valor_investido: float, carteira_id: int = 1):
+    """[CREATE] Simula a compra de uma criptomoeda em Reais vinculada a uma Carteira e uma Moeda."""
+    moeda_obj, erro = buscar_moeda_db(moeda_key)
     if erro:
         return None, erro
 
@@ -210,14 +393,23 @@ def criar_investimento(moeda_key: str, valor_investido: float):
     if erro_valor:
         return None, erro_valor
 
-    preco_na_compra = consultar_preco_coinbase(moeda_limpa)
+    carteira_obj = db.session.get(Carteira, carteira_id)
+    if not carteira_obj:
+        # Se a carteira 1 não existir por qualquer motivo, usa a primeira disponível
+        carteira_obj = Carteira.query.first()
+        if not carteira_obj:
+            return None, "Carteira não encontrada no banco de dados"
+
+    preco_na_compra = consultar_preco_coinbase(moeda_obj.simbolo)
     if preco_na_compra is None:
         return None, "Falha ao obter cotação na Coinbase"
 
     quantidade_cripto = valor_investido / preco_na_compra
 
     novo_investimento = Investimento(
-        simbolo=moeda_limpa.upper(),
+        carteira_id=carteira_obj.id,
+        moeda_id=moeda_obj.id,
+        simbolo=moeda_obj.simbolo,
         moeda_base=MOEDA_PADRAO,
         valor_investido=valor_investido,
         preco_na_compra=preco_na_compra,
@@ -275,22 +467,27 @@ def _calcular_item_carteira(inv: Investimento, preco_atual: float | None) -> dic
     return dados_item
 
 
-def listar_carteira(moeda_key: str | None = None, forcar_atualizacao: bool = False):
+def listar_carteira(
+    moeda_key: str | None = None,
+    forcar_atualizacao: bool = False,
+    carteira_id: int | None = None,
+):
     """
-    Lista as compras da moeda escolhida e soma:
-    - quantidade_total_cripto (fração total acumulada);
-    - total_investido, total_atual e lucro_prejuizo_total.
+    [READ] Lista as compras salvas (filtrando opcionalmente por moeda e/ou carteira)
+    e calcula o resumo financeiro atualizado.
     """
     query = Investimento.query.filter_by(moeda_base=MOEDA_PADRAO)
 
     if moeda_key:
         query = query.filter_by(simbolo=moeda_key.strip().upper())
 
+    if carteira_id is not None:
+        query = query.filter_by(carteira_id=carteira_id)
+
     investimentos = query.order_by(
         Investimento.data_compra.desc(), Investimento.id.desc()
     ).all()
 
-    # Consulta a Coinbase apenas 1 vez por moeda diferente
     cotacoes_atuais = {}
     for inv in investimentos:
         if inv.simbolo not in cotacoes_atuais:
@@ -332,11 +529,45 @@ def listar_carteira(moeda_key: str | None = None, forcar_atualizacao: bool = Fal
     return itens, resumo
 
 
-def remover_investimento(investimento_id: int):
-    """Remove (simula a venda) de um investimento da Carteira Virtual pelo ID."""
+def atualizar_investimento(
+    investimento_id: int,
+    novo_valor_investido: float | None = None,
+    nova_carteira_id: int | None = None,
+):
+    """
+    [UPDATE] Atualiza o valor investido (recalculando a fração de cripto)
+    e/ou transfere o investimento para outra carteira.
+    """
     investimento = db.session.get(Investimento, investimento_id)
     if investimento is None:
-        return False, "Investimento não encontrado"
+        return None, "Investimento não encontrado pelo ID informado"
+
+    if novo_valor_investido is not None:
+        erro_valor = _validar_valor_positivo(
+            novo_valor_investido,
+            "O novo valor investido deve ser maior que zero",
+        )
+        if erro_valor:
+            return None, erro_valor
+
+        investimento.valor_investido = novo_valor_investido
+        investimento.quantidade_cripto = novo_valor_investido / investimento.preco_na_compra
+
+    if nova_carteira_id is not None:
+        carteira_destino = db.session.get(Carteira, nova_carteira_id)
+        if not carteira_destino:
+            return None, "A carteira informada para transferência não existe"
+        investimento.carteira_id = carteira_destino.id
+
+    db.session.commit()
+    return investimento, None
+
+
+def remover_investimento(investimento_id: int):
+    """[DELETE] Remove (simula a venda) de um investimento da Carteira Virtual pelo ID."""
+    investimento = db.session.get(Investimento, investimento_id)
+    if investimento is None:
+        return False, "Investimento não encontrado pelo ID informado"
 
     db.session.delete(investimento)
     db.session.commit()

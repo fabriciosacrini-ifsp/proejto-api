@@ -17,7 +17,7 @@ def create_app(test_config=None):
     @app.after_request
     def liberar_cors(response):
         response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         return response
 
@@ -25,9 +25,12 @@ def create_app(test_config=None):
     from app.routes import api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
 
-    # Criar tabelas no banco SQLite se ainda não existirem
+    # Criar as 4 tabelas relacionais no SQLite3 e cadastrar dados iniciais
     with app.app_context():
-        from app import models  # noqa: F401 - garante o carregamento de todas as tabelas
+        from app import models  # noqa: F401 - carrega Moeda, Carteira, PrecoCripto e Investimento
+        from app.services import inicializar_dados_padrao
+
         db.create_all()
+        inicializar_dados_padrao()
 
     return app

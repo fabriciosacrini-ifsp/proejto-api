@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AlertCircle, Coins, Moon, RefreshCw, Sun } from 'lucide-react'
 import {
+  atualizarInvestimento,
   buscarCarteira,
   buscarHistorico,
   buscarMoedas,
@@ -115,6 +116,11 @@ export default function App() {
     await carregarCarteira(false)
   }
 
+  async function handleEditarCompra(id, novoValor) {
+    await atualizarInvestimento(id, novoValor)
+    await carregarCarteira(false)
+  }
+
   async function handleRemoverCompra(id) {
     await removerInvestimento(id)
     await carregarCarteira(false)
@@ -194,6 +200,7 @@ export default function App() {
           carregando={carregandoCarteira}
           onAtualizarCarteira={carregarCarteira}
           onAdicionarCompra={handleAdicionarCompra}
+          onEditarCompra={handleEditarCompra}
           onRemoverCompra={handleRemoverCompra}
         />
       </main>

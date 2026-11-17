@@ -1,105 +1,127 @@
-# CriptoMonitor
+# CriptoMonitor — API Python (POO + SQLite3 Relacional + Terminal & Web)
 
-Aplicação web full-stack para monitoramento de criptomoedas em tempo real em **Reais (BRL)**, utilizando a API pública da **Coinbase**, backend em **Python (Flask + SQLite)** e frontend em **React + Vite**.
+Aplicação desenvolvida em **Python** seguindo o paradigma de **Orientação a Objetos (POO)**, integrada ao banco de dados relacional **SQLite3** (4 tabelas relacionais com manutenção **CRUD** completa) e consumindo cotações em tempo real em **Reais (BRL)** da API pública da **Coinbase**.
 
----
-
-## Funcionalidades
-
-- **Termômetro de Cotação:** consulta a cotação atual na Coinbase (`BTC`, `ETH`, `LINK`, `SOL`), salva no banco de dados SQLite e exibe a variação em relação à consulta anterior, além de máxima, mínima, média e um pop-up com o histórico de consultas.
-- **Conversor Instantâneo:** converte qualquer valor em Reais (`R$`) para a fração correspondente da criptomoeda selecionada (incluindo exibição em *Satoshis* para Bitcoin).
-- **Carteira Virtual:** simula compras em `R$`, calcula automaticamente a quantidade acumulada, o valor atualizado hoje e o lucro/prejuízo, além de permitir visualizar e simular a venda de cada compra em um pop-up.
-- **Tema Claro / Escuro:** alternância direta na interface.
+O sistema conta com duas interfaces integradas ao mesmo banco de dados (`cripto.db`):
+1. **Menu Interativo de Terminal (CMD):** interface em linha de comando com entrada/saída segura, tratamento de exceções e todas as operações CRUD nas 4 tabelas.
+2. **Interface Web (Flask REST API + React/Vite):** painel visual com Termômetro de Cotação, Conversor Instantâneo e Carteira Virtual.
 
 ---
 
-## Tecnologias Utilizadas
+## Bibliotecas Instaladas (Python / Backend)
 
-- **Backend:** Python, Flask, Flask-SQLAlchemy, SQLite, Requests
-- **Frontend:** React, Vite, Lucide React
-- **API Externa:** Coinbase Spot Price API (`https://api.coinbase.com/v2/prices/{MOEDA}-BRL/spot`)
+Listadas no arquivo [`backend/requirements.txt`](backend/requirements.txt):
 
----
+| Biblioteca | Versão | Finalidade no Projeto |
+| :--- | :--- | :--- |
+| **`Flask`** | `3.1.3` | Criação do servidor backend e rotas REST (`/api/...`) |
+| **`Flask-SQLAlchemy`** | `3.1.1` | ORM em Orientação a Objetos para mapear as 4 tabelas relacionais no **SQLite3** |
+| **`requests`** | `2.34.2` | Consumo HTTP da API externa da Coinbase (`/v2/prices/{MOEDA}-BRL/spot`) |
+| **`sqlite3`** | *(Nativa do Python)* | Motor de banco de dados relacional local (`instance/cripto.db`) |
 
-## Pré-requisitos
-
-Para executar o projeto em um computador novo, é necessário ter instalado:
-- [Python 3.10+](https://www.python.org/downloads/) *(marque a opção "Add Python to PATH" na instalação)*
-- [Node.js 18+](https://nodejs.org/)
-
----
-
-## Como Executar o Projeto
-
-### Opção 1 — Automática (Windows, recomendado)
-
-1. Baixe ou clone este repositório.
-2. Dê dois cliques no arquivo **`iniciar_projeto.bat`** na pasta raiz.
-3. Na primeira execução, o script cria automaticamente o ambiente virtual Python (`venv`), baixa as dependências do `requirements.txt` e do `package.json` (`node_modules`), inicia os dois servidores e abre o site no navegador em **`http://localhost:5173`**.
+*(No Frontend Web: `react`, `vite` e `lucide-react`, listadas em `frontend/package.json`.)*
 
 ---
 
-### Opção 2 — Manual (via Terminal)
+## Arquitetura em Orientação a Objetos e Separação de Módulos
 
-#### 1. Iniciar o Backend (Porta `5000`)
-```bash
-cd backend
-python -m venv venv
-
-# No Windows:
-venv\Scripts\activate
-# No Linux/Mac:
-# source venv/bin/activate
-
-pip install -r requirements.txt
-python run.py
-```
-
-#### 2. Iniciar o Frontend (Porta `5173`)
-Em outro terminal:
-```bash
-cd frontend
-npm install
-npm run dev -- --port 5173 --strictPort
-```
-
-Após iniciar os dois servidores, acesse **`http://localhost:5173`** no navegador.
-
----
-
-## Estrutura do Projeto
+O código Python está organizado na pasta `backend/` com responsabilidades separadas por módulo:
 
 ```text
 Projeto-API/
-├── iniciar_projeto.bat       # Inicializador automático (Windows)
-├── backend/                  # API Flask + Banco SQLite
-│   ├── run.py                # Ponto de entrada do servidor Flask
-│   ├── config.py             # Configuração do SQLite
-│   ├── requirements.txt      # Dependências Python
+├── iniciar_terminal.bat      # Atalho para abrir o Menu Interativo no CMD (Terminal)
+├── iniciar_projeto.bat       # Atalho para iniciar os servidores Backend + Frontend Web
+├── backend/                  # Aplicação Python (POO + Flask + SQLite3)
+│   ├── terminal.py           # Classe SistemaTerminalCripto (Menu de opções no CMD com CRUD)
+│   ├── run.py                # Ponto de entrada do servidor da API Flask
+│   ├── config.py             # Classe Config com o caminho do banco SQLite3
+│   ├── requirements.txt      # Bibliotecas Python instaladas
 │   └── app/
-│       ├── __init__.py       # Criação do app Flask e liberação de CORS
-│       ├── models.py         # Tabelas PrecoCripto e Investimento
-│       ├── services.py       # Regras de negócio e chamadas à Coinbase
-│       └── routes.py         # Rotas REST da API (/api/...)
-└── frontend/                 # Interface React + Vite
-    ├── package.json          # Dependências JavaScript
-    └── src/
-        ├── App.jsx           # Tela principal e controle de moeda/tema
-        ├── services/api.js   # Comunicação com o backend Flask
-        └── components/       # Termômetro, Conversor, Carteira e Modais
+│       ├── __init__.py       # Inicialização do Flask, SQLAlchemy e criação das 4 tabelas
+│       ├── models.py         # 4 Classes POO mapeadas para as 4 tabelas relacionais do SQLite3
+│       ├── services.py       # Regras de negócio, integração Coinbase e funções CRUD
+│       └── routes.py         # Endpoints HTTP (GET, POST, PUT, DELETE)
+└── frontend/                 # Interface Web (React + Vite)
 ```
 
 ---
 
-## Principais Endpoints da API
+## Banco de Dados SQLite3 — 4 Tabelas Relacionais
 
-| Método | Rota | Descrição |
+Definidas em [`backend/app/models.py`](backend/app/models.py) utilizando classes Python (`db.Model`), chaves primárias (`primary_key=True`), chaves estrangeiras (`db.ForeignKey`) e relacionamentos (`db.relationship`):
+
+1. **`moedas` (Classe `Moeda`):**
+   - Guarda as criptomoedas cadastradas (`id`, `simbolo`, `nome`).
+   - Relacionamento **1:N** com `precos_cripto` e `investimentos`.
+2. **`carteiras` (Classe `Carteira`):**
+   - Guarda as carteiras/perfis de investidores (`id`, `nome`, `titular`, `perfil`, `data_criacao`).
+   - Relacionamento **1:N** com `investimentos`.
+3. **`precos_cripto` (Classe `PrecoCripto`):**
+   - Guarda o histórico de cotações consultadas na Coinbase (`id`, `moeda_id [FK]`, `simbolo`, `preco`, `data_consulta`).
+   - Relacionamento **N:1** com a tabela `moedas`.
+4. **`investimentos` (Classe `Investimento`):**
+   - Guarda as compras simuladas (`id`, `carteira_id [FK]`, `moeda_id [FK]`, `simbolo`, `valor_investido`, `preco_na_compra`, `quantidade_cripto`, `data_compra`).
+   - Relacionamento **N:1** com `carteiras` e **N:1** com `moedas`.
+
+---
+
+## Operações CRUD Implementadas
+
+Todas as 4 tabelas possuem suporte a **Create, Read, Update e Delete** tanto pelo **Menu de Terminal (`terminal.py`)** quanto pelas **Rotas da API (`routes.py`)**:
+
+| Tabela | Create (Criar) | Read (Ler/Consultar) | Update (Editar) | Delete (Excluir) |
+| :--- | :--- | :--- | :--- | :--- |
+| **`moedas`** | Cadastrar nova cripto (ex: `ADA`, `DOGE`) | Listar moedas cadastradas | Editar nome da moeda | Remover moeda |
+| **`carteiras`** | Criar nova carteira de cliente | Listar carteiras e total de compras | Editar nome, titular ou perfil | Excluir carteira |
+| **`precos_cripto`** | Consultar Coinbase e gravar cotação | Termômetro (máx, mín, média) e histórico | Corrigir preço de uma cotação | Excluir cotação do histórico |
+| **`investimentos`** | Simular compra em R$ | Listar compras e calcular lucro/prejuízo | Editar valor investido / carteira | Vender / excluir compra |
+
+---
+
+## Como Executar a Aplicação
+
+### Pré-requisitos
+- [Python 3.10+](https://www.python.org/downloads/) *(com "Add Python to PATH" marcado)*
+- [Node.js 18+](https://nodejs.org/) *(necessário apenas para a interface Web)*
+
+---
+
+### Modo 1 — Executar o Menu Interativo no Terminal (CMD)
+
+#### Pelo atalho automático (Windows):
+Basta dar dois cliques em **`iniciar_terminal.bat`**. Ele prepara a `venv`, instala as bibliotecas do `requirements.txt` se necessário e abre o menu interativo no terminal.
+
+#### Manualmente pelo terminal:
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python terminal.py
+```
+
+No menu do terminal, escolha as opções de `1` a `5` para realizar o CRUD completo nas 4 tabelas ou `0` para sair com segurança.
+
+---
+
+### Modo 2 — Executar a API + Interface Web (Flask + React)
+
+#### Pelo atalho automático (Windows):
+Dê dois cliques em **`iniciar_projeto.bat`**. Ele instala as dependências automaticamente, inicia a API Flask na porta `5000` e abre o site React em `http://localhost:5173`.
+
+---
+
+## Principais Endpoints REST da API (`http://127.0.0.1:5000/api`)
+
+| Método | Rota | Operação CRUD / Descrição |
 | :--- | :--- | :--- |
-| `GET` | `/api/moedas` | Lista as criptomoedas suportadas (`BTC`, `ETH`, `LINK`, `SOL`) |
-| `GET` | `/api/cripto/<moeda>` | Consulta a Coinbase, salva no SQLite e retorna o termômetro |
-| `GET` | `/api/cripto/<moeda>/resumo` | Retorna o termômetro já salvo no banco |
-| `GET` | `/api/cripto/historico?moeda=btc` | Lista o histórico de cotações salvas |
-| `GET` | `/api/converter?moeda=btc&valor=100` | Converte um valor em `R$` para criptomoeda |
-| `GET` | `/api/carteira?moeda=btc` | Lista compras simuladas e resumo de lucro/prejuízo |
-| `POST` | `/api/carteira` | Registra uma nova compra simulada em `R$` |
-| `DELETE` | `/api/carteira/<id>` | Remove (simula a venda) de uma compra |
+| `GET` / `POST` | `/api/moedas` | **[READ / CREATE]** Lista ou cadastra criptomoedas |
+| `PUT` / `DELETE` | `/api/moedas/<id>` | **[UPDATE / DELETE]** Atualiza ou remove uma criptomoeda |
+| `GET` / `POST` | `/api/carteiras` | **[READ / CREATE]** Lista ou cria carteiras de investidores |
+| `PUT` / `DELETE` | `/api/carteiras/<id>` | **[UPDATE / DELETE]** Edita ou remove uma carteira |
+| `GET` | `/api/cripto/<moeda>` | **[CREATE + READ]** Busca preço na Coinbase, grava em `precos_cripto` e retorna o Termômetro |
+| `GET` | `/api/cripto/historico` | **[READ]** Lista o histórico de cotações salvas |
+| `PUT` / `DELETE` | `/api/cripto/historico/<id>` | **[UPDATE / DELETE]** Edita ou exclui uma cotação do histórico |
+| `GET` | `/api/converter?moeda=btc&valor=100` | Converte valor em Reais (`R$`) para criptomoeda (e Satoshis) |
+| `GET` / `POST` | `/api/carteira` | **[READ / CREATE]** Lista compras com lucro/prejuízo ou registra nova compra |
+| `PUT` / `DELETE` | `/api/carteira/<id>` | **[UPDATE / DELETE]** Edita valor/carteira de uma compra ou realiza a venda |

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import {
   AlertTriangle,
+  Check,
   Clock,
   Coins,
   Minus,
+  Pencil,
   Plus,
   Receipt,
   RefreshCw,
@@ -11,6 +13,7 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
+  X,
 } from 'lucide-react'
 import IconeMoeda from './IconeMoeda'
 import Modal from './Modal'
@@ -33,11 +36,15 @@ export default function CarteiraVirtual({
   carregando,
   onAtualizarCarteira,
   onAdicionarCompra,
+  onEditarCompra,
   onRemoverCompra,
 }) {
   const [valorCompra, setValorCompra] = useState('250')
   const [enviando, setEnviando] = useState(false)
   const [idRemovendo, setIdRemovendo] = useState(null)
+  const [idEditando, setIdEditando] = useState(null)
+  const [valorEdicao, setValorEdicao] = useState('')
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false)
   const [erroForm, setErroForm] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
 
@@ -68,6 +75,26 @@ export default function CarteiraVirtual({
       setErroForm(err.message)
     } finally {
       setIdRemovendo(null)
+    }
+  }
+
+  function iniciarEdicao(item) {
+    setIdEditando(item.id)
+    setValorEdicao(String(item.valor_investido))
+    setErroForm('')
+  }
+
+  async function salvarEdicao(id) {
+    setSalvandoEdicao(true)
+    setErroForm('')
+
+    try {
+      await onEditarCompra(id, valorEdicao)
+      setIdEditando(null)
+    } catch (err) {
+      setErroForm(err.message)
+    } finally {
+      setSalvandoEdicao(false)
     }
   }
 
@@ -240,7 +267,20 @@ export default function CarteiraVirtual({
                     <div className="modal-compra-valores">
                       <div>
                         <span className="label-pequena">Investido</span>
-                        <strong>{formatarDinheiro(item.valor_investido)}</strong>
+                        {idEditando === item.id ? (
+                          <div className="input-com-prefixo" style={{ maxWidth: '130px' }}>
+                            <span className="prefixo">R$</span>
+                            <input
+                              type="text"
+                              inputMode="decimal"
+                              value={valorEdicao}
+                              onChange={(e) => setValorEdicao(e.target.value)}
+                              aria-label="Novo valor investido"
+                            />
+                          </div>
+                        ) : (
+                          <strong>{formatarDinheiro(item.valor_investido)}</strong>
+                        )}
                       </div>
                       <div>
                         <span className="label-pequena">Hoje</span>
@@ -266,12 +306,50 @@ export default function CarteiraVirtual({
                         <span className="badge badge-info">Indisponível</span>
                       )}
 
+                      {idEditando === item.id ? (
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-sucesso btn-pequeno"
+                            onClick={() => salvarEdicao(item.id)}
+                            disabled={salvandoEdicao}
+                            title="Salvar novo valor (UPDATE)"
+                          >
+                            {salvandoEdicao ? (
+                              <RefreshCw size={14} className="girando" />
+                            ) : (
+                              <Check size={14} />
+                            )}
+                            <span>Salvar</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-secundario btn-pequeno"
+                            onClick={() => setIdEditando(null)}
+                            disabled={salvandoEdicao}
+                            title="Cancelar edição"
+                          >
+                            <X size={14} />
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-secundario btn-pequeno"
+                          onClick={() => iniciarEdicao(item)}
+                          title="Editar valor investido (UPDATE)"
+                        >
+                          <Pencil size={14} />
+                          <span>Editar</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         className="btn btn-perigo btn-pequeno"
                         onClick={() => handleVender(item.id)}
                         disabled={removendoEste}
-                        title="Vender investimento"
+                        title="Vender investimento (DELETE)"
                       >
                         {removendoEste ? (
                           <RefreshCw size={14} className="girando" />

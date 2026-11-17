@@ -92,7 +92,20 @@ export function criarInvestimento(moeda, valorInvestido) {
   )
 }
 
-// 8. Remove (simula a venda) de um investimento da carteira pelo ID
+// 8. Atualiza o valor investido de uma compra já salva pelo ID (UPDATE)
+export function atualizarInvestimento(id, novoValorInvestido) {
+  return comGiroMinimo(
+    requisitar(`/carteira/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        valor_investido: novoValorInvestido,
+      }),
+    })
+  )
+}
+
+// 9. Remove (simula a venda) de um investimento da carteira pelo ID (DELETE)
 export function removerInvestimento(id) {
   return comGiroMinimo(
     requisitar(`/carteira/${id}`, {
